@@ -2,17 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:frame/auth_page.dart';
+import 'package:frame/auth/auth_page.dart';
+import 'package:frame/auth/signup_setting_page.dart';
 import 'package:frame/home/my_account/my_account_profile_edit.dart';
+import 'package:frame/home/my_account/my_account_top.dart';
 import 'package:frame/home/other_user_profile_page.dart';
 import 'package:frame/home/post_detail_page.dart';
 import 'package:frame/home/search/search_top_page.dart';
-import 'package:frame/home/tag_search/tag_search_top_page.dart';
 import 'package:frame/home/timeline_page.dart';
-import 'package:frame/login/login_password.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:frame/sign_up/signup_setting_page.dart';
-import 'package:universal_html/html.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async{
@@ -45,12 +43,12 @@ class FrameApp extends StatelessWidget {
       ),
 
       routes: {
-        '/login_password':(context) => LoginPasswordPage(),
-        '/my_account_profile_edit':(context) => MyAccountProfileEdit(),
+        //'/my_account_profile_edit':(context) => MyAccountProfileEdit(),
         '/other_user_profile_page':(context) => OtherUserProfilePage(),
         '/timeline_page':(context) => TimelinePage(),
         '/search_top_page':(context) => SearchTopPage(),
         '/post_detail_page':(context) => PostDetailPage(),
+        '/my_account_top':(context) => MyAccountTopPage(),
         //'/tag_search_top_page':(context) => TagSerchTopPage(),
       },
       // ログイン画面を表示
@@ -102,7 +100,7 @@ class FrameApp extends StatelessWidget {
                               debugPrint('1312');//ここまで
                               if (isNewUserSnapshot.data!) {
                                 debugPrint('13121');
-                                return SignupSettingPage(); //カスタムクレームがtrue:新規ユーザーの場合
+                                return TimelinePage(); //カスタムクレームがtrue:新規ユーザーの場合
                               } else {
                                 debugPrint('13122');
                                 return TimelinePage(); //false:既存ユーザーの場合タイムラインへ

@@ -10,20 +10,23 @@ class PostRepository {
 
   //const PostRepository({required this.express,required this.uid});
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> fetchLatestPosts() {
+  ///ストリームだと再描画がやばいからfutueを取得することにした(2/9
+  //設定なんでこれストリームで返してんの？
+  //Stream<QuerySnapshot<Map<String, dynamic>>> fetchLatestPosts() {
+  Future<QuerySnapshot<Map<String, dynamic>>> fetchLatestPosts() {
     return FirebaseFirestore.instance
         .collection('posts')
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .get();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> fetchFollowingPosts(
+  Future<QuerySnapshot<Map<String, dynamic>>> fetchFollowingPosts(
       List<Object> following) {
     return FirebaseFirestore.instance
         .collection('posts')
         .where('userUid', whereIn: following)
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .get();
   }
 
   Future<List<Object>> getFollowingUserIds(String uid) async {

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:frame/auth_page_form.dart';
+import 'package:frame/auth/auth_page_screan.dart';
 import 'package:frame/home/timeline_page.dart';
-import 'package:frame/sign_up/signup_setting_page.dart';
+import 'package:frame/auth/signup_setting_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// ログイン画面用Widget
@@ -14,13 +14,7 @@ class AuthPage extends StatefulWidget {
   State<AuthPage> createState() => _AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> {
-
-  bool _loginIsVisible = false; // ログイン入力欄の表示/非表示を管理する変数
-  String loginErrorMessage = '';
-
-  bool _signUpIsVisible = false; // 登録入力欄の表示/非表示を管理する変数
-  String signUpErrorMessage = '';
+class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin{ //mixin
 
 
   Future<void> _signInWithGoogle() async {
@@ -107,61 +101,7 @@ class _AuthPageState extends State<AuthPage> {
           }
           // 未ログイン
           else {
-            return Container(
-              height: 600,
-              child: Column(
-                children: [
-                  // メールアドレス入力
-                  // ユーザー登録ボタン
-                  ElevatedButton(
-                      child: Text('ログイン'),
-                      // ボタンが押されたらログインフォームの表示/非表示を切り替える
-                      onPressed: () {
-                        setState(() {
-                          _loginIsVisible != _loginIsVisible;
-                          _signUpIsVisible == false;//反対のフォームしまう
-                        });
-                      }
-                  ),
-
-                  Visibility(
-                      visible: _loginIsVisible,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: AuthPageForm(which: 'Login'),
-                      )
-                  ),
-
-                  SizedBox(height: 10),
-
-                  //ユーザー登録ボタン
-                  ElevatedButton(
-                      child: Text('アカウントを作成'),
-                      onPressed: () {
-                        setState(() {
-                          _signUpIsVisible != _signUpIsVisible;//ボタンを押したらフォームを出したり消したり
-                          _loginIsVisible == false;//反対のフォームしまう
-                        });
-                      }),
-
-                  Visibility(
-                    visible: _signUpIsVisible,
-                    child: Container(
-                      padding:EdgeInsets.symmetric(vertical: 8),
-                      child:AuthPageForm(which: 'SignUp'),
-                    ),
-                  ),
-
-                  SizedBox(height: 8),
-
-                  ElevatedButton(
-                    onPressed: _signInWithGoogle,
-                    child: Text('Google でログイン'),
-                  )
-                ],
-              ),
-
-            );
+            return AuthPageScrean(func: _signInWithGoogle);
           }
         }
     );

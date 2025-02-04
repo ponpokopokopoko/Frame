@@ -3,6 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+//ブックマークを監視してbool値を返すストリーム関数
+Stream<bool> isBookmarkStream(String postId, String userId) {
+  return FirebaseFirestore.instance
+      .collection('bookmarks')
+      .doc('${postId}_$userId')
+      .snapshots()
+      .map((snapshot) => snapshot.exists);
+}
+
 ///ブックマーク
 ///ブックマーク機能のクラス
 class BookmarkButton extends StatefulWidget {
@@ -47,34 +56,40 @@ class _BookmarkButtonState extends State<BookmarkButton> {
 
   }
 
-
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('bookmarks')
-            .doc('${widget.postId}_$uid')
-            .snapshots(),
+    return StreamBuilder<bool>(
+        stream: isBookmarkStream(widget.postId, uid),
         builder: (context, snapshot) {
-          if (snapshot.data!.data() != null ) {
-            _isBookmarked = true;
-          } else {
-            _isBookmarked = false;
+
+          // データ読み込み中の場合
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CircularProgressIndicator();
           }
-          return IconButton(
-              icon: Icon(
-                _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                color: Colors.black45,
-              ),
-              onPressed: () {
-                if (uid == '未登録') {
-                  print('ログインしてください');
-                } else {
-                  onBookmarkPressed(widget.postId, uid);
+
+          if (snapshot.hasData && snapshot.data is bool ) {
+            _isBookmarked = snapshot.data! ;
+
+            return IconButton(
+                icon: Icon(
+                  _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: Colors.black45,
+                ),
+                onPressed: () {
+                  if (uid == '未登録') {
+                    print('ログインしてください');
+                  } else {
+                    onBookmarkPressed(widget.postId, uid);
+                  }
                 }
-              }
-          );
+            );
+          }
+          else{   //ここへは来ない
+            return const SizedBox.shrink();
+          }
         }
     );
   }
 }
+
+

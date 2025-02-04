@@ -58,7 +58,8 @@ class PopularPostCard extends StatelessWidget{
                 //いいねボタン
                 //全体をポストカードぽく枠線、角丸く正方形
                 Expanded(
-                  child: Stack(children: [
+                  child: Stack(
+                    children: [
                     Positioned.fill(
                       child: CachedNetworkImage(
                         imageUrl: map['imageUrl'][0],

@@ -1,124 +1,130 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:frame/home/tag_search/tag_search_top_page.dart';
+import 'package:frame/about_post_button.dart';
 import 'package:frame/ui_widgets/buttons/bookmark_button_widget.dart';
 import 'package:frame/ui_widgets/buttons/like_button_widget.dart';
-import 'package:frame/ui_widgets/post_parts/image_swiper.dart';
 import 'package:frame/ui_widgets/post_parts/post_date_widget.dart';
 import 'package:frame/ui_widgets/post_parts/post_icon_image_widget.dart';
-import 'package:image_size_getter/image_size_getter.dart';
 
-class MakeTimelineListContents extends StatefulWidget{
+class MakeTimelineListContents extends StatelessWidget{
   final Map<String, dynamic> postUserData;
   final Map<String, dynamic> postData;
 
-
-  const MakeTimelineListContents({super.key, required this.postUserData, required this.postData});
-  @override
-  State<MakeTimelineListContents> createState() => _MakeTimelineListContentsState();
-}
-class _MakeTimelineListContentsState extends State<MakeTimelineListContents>{
-
+  const MakeTimelineListContents({super.key, required this.postUserData, required this.postData,});
 
   @override
   Widget build(BuildContext conext){
-    return SizedBox.shrink(
-        child: LayoutBuilder(
+    return LayoutBuilder(
           builder: (context, constraints) {
             // 画面の幅に応じて画像の幅を調整 (例)
             final imageWidth = constraints.maxWidth * 0.5; // 画面幅の50%
             //以下にUI
             return Card(
-                key: UniqueKey(),
+                //key: UniqueKey(),
                 child: Container(
+                  width: imageWidth,//このwidth効いてない？
+                    height: 700,
                     color: Colors.black26,
                     child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        //mainAxisSize: MainAxisSize.min,
                         children: [
                           const SizedBox(height: 5,),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               //アイコン
+                              //初期アイコン準備
                               PostIconImage(
-                                  iconImage: widget.postUserData['iconImage'],
-                                  iconSize: 10,
+                                  iconImage:postUserData['iconImage'],
+                                  iconSize: 15,
                                   onTap: () {
                                     Navigator.pushNamed(
                                         context, '/other_user_profile_page',
-                                        arguments: widget.postUserData['uid']
+                                        arguments: postUserData['uid']
                                     );
                                   }
                               ),
 
-                              SizedBox(width: 5,),
+                              const SizedBox(width: 5,),
                               //名前（ｉｄ）
-                              Text(widget.postUserData['userId'] ?? 'null'),
+                              Text(postUserData['userId'] ?? 'null'),
 
-                              SizedBox(width: 5,),
+                              const SizedBox(width: 5,),
                               //日付
-                              PostDate(timestamp: widget.postData['createdAt'],
+                              PostDate(timestamp: postData['createdAt'],
                                 fontSize: 12,)
                             ],
                           ),
-                          SizedBox(height: 5,),
+                          const SizedBox(height: 5,),
 
-                          SizedBox(
-                            width: imageWidth, // 幅を固定
-                            //表示する画像に寄って高さを調節する
-                            child: OverflowBox(
-                              maxHeight: 600, // 最大高さ
+                         SizedBox(
+                            width: 500,
+                            height: 500,
                               //本当はイメージスワイパーにする
-                              child:SizedBox.shrink(
-                                child: Image.network(
-                                widget.postData['imageUrl'][0],
-                                fit: BoxFit.fitWidth, // コンテナを覆うように拡大・縮小
-                                alignment: Alignment.center, // 画像の中心を基準にトリミング
-                              ),),
+                              child: CachedNetworkImage(
+                                imageUrl: postData['imageUrl'][0],
+                                fit: BoxFit.cover, // コンテナを覆うように拡大・縮小
+                                alignment: Alignment.center,  // 画像の中心を基準にトリミング
+                              ),
                             ),
-                          ),
 
-
-
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                         Column(
+                            //mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               //いいね
-                              Row(
-                                children: [
-                                  LikeButton(postId: widget.postData['postId']),
-                                  BookmarkButton(
-                                    postId: widget.postData['postId'],),
-                                ],),
+                              SizedBox(
+                                height: 55,
+                                child:RepaintBoundary(
 
-                              Visibility(
-                                visible: widget.postData['caption'] != '',
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(widget.postData['caption']),
-                                ),
+                                  child:  Row(
+                                  children: [
+                                    RepaintBoundary(
+                                      child: LikeButton(postId: postData['postId']),
+                                    ),
+
+                                    //リアルタイムの数値を反映するようにする
+                                    Text(postData['like'].toString(),
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),),
+                                    BookmarkButton(postId: postData['postId'],),
+                                    Text(postData['bookmark'].toString(),
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),),
+                                    AboutPostButton(
+                                        posterUid: postUserData['uid'],
+                                        postId: postData['postId']
+                                    )
+                                  ],),
+                                )
                               ),
 
-                              Visibility(//型エラーが出る→childrenにText()を返していたのが型エラーになってた
-                                visible:widget.postData['tags'] != null,
-                                  child: Wrap(
-                                    spacing: 8,
-                                    children: (widget.postData['tags'] != null)
-                                        ? (widget.postData['tags'] as List<dynamic>).map((tag) =>
-                                        InkWell( // タップ可能にする
-                                          onTap: () {
+                              /*(postData['caption'] != '')
+                                  ?Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(postData['caption']),
+                                  )
+                                  :SizedBox.shrink(),
 
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(builder: (context) => TagSerchTopPage(tagName: tag)),
-                                            );
-                                          },
-                                          child: Chip(label: Text('#$tag')),
-                                        ))
-                                        .toList()
-                                        : <Widget>[], // 空のリストを渡す,
-                                  ),
-                                ),
+                              (postData['tags'] != null)
+                                ? Wrap(
+                                spacing: 8,
+                                children: (postData['tags'] != null)
+                                    ? (postData['tags'] as List<dynamic>).map((tag) =>
+                                    InkWell( // タップ可能にする
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => TagSerchTopPage(tagName: tag)),
+                                        );
+                                      },
+                                      child: Chip(label: Text('#$tag')),
+                                    ))
+                                    .toList()
+                                    : <Widget>[], // 空のリストを渡す,
+                              )
+                              :const SizedBox.shrink()*/
 
                             ],
                           ),
@@ -126,7 +132,7 @@ class _MakeTimelineListContentsState extends State<MakeTimelineListContents>{
                     ))
             );
           }
-        ),);
+        );
   }
 
 }

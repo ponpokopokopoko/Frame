@@ -1,137 +1,70 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FollowButtom extends StatefulWidget{
 
-  final String followedId; //相手側（フォローされるユーザー）
-  //final String followingId; //ボタン実行側（フォローするユーザー）
 
-  FollowButtom({super.key, required this.followedId});
-  @override
-  State<FollowButtom> createState() => _FollowButtomState();
+Future<void> _toggleFollow(String followingId, String followedId) async {
+  try {
+    // フォローしているか確認
+    DocumentSnapshot followingSnapshot = await FirebaseFirestore.instance
+        .collection('follows')
+        .doc(followingId)
+        .get();
+
+    // フォローリストを取得
+    Map<String, dynamic>? followingData = followingSnapshot.data() as Map<String, dynamic>?;
+    // フォロー/フォロー解除
+    bool followCheck = followingData?['myFollowingList'].contains(followedId);
+    //フォローする側のドキュメント
+    await FirebaseFirestore.instance
+        .collection('follows')
+        .doc(followingId)
+        .update({
+      'myFollowingList': followCheck
+          ? FieldValue.arrayRemove([followedId])//trueすでに登録されてた場合はmyFollowingListから相手を削除
+          : FieldValue.arrayUnion([followedId]),//false
+      'myFollowingCount': followCheck
+          ? FieldValue.increment(-1)
+          : FieldValue.increment(1),
+    });
+    //される側のドキュメント
+    await FirebaseFirestore.instance
+        .collection('follows')
+        .doc(followedId)
+        .update({
+      'myFollowerList': followCheck
+          ? FieldValue.arrayRemove([followingId])//trueすでに登録されてた場合はmyFollowerListから削除
+          : FieldValue.arrayUnion([followingId]),
+      'myFollowerCount': followCheck
+          ? FieldValue.increment(-1)
+          : FieldValue.increment(1),
+    });
+  } catch (e) {
+    print('Error: $e');
+  }
 }
 
+class FollowButton extends StatefulWidget{
 
-class _FollowButtomState extends State<FollowButtom>{
+  final String followedId;
 
+  const FollowButton ({super.key,required this.followedId});
+  @override
+  State<FollowButton> createState() => _FollowButtonState()  ;
+}
+
+class _FollowButtonState extends State<FollowButton>{
   late bool _isFollowed;
-  final String uid = FirebaseAuth.instance.currentUser?.uid ?? '未登録';
-
-
-
- /* // フォロー,フォロー解除をする関数
-  Future<void> Follow (bool isFollow) async {
-    try{
-      //トランザクション開始
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        //参照をゲット
-        DocumentReference followingDoc = FirebaseFirestore.instance.collection('follows').doc(widget.followingId);
-        DocumentReference followedDoc= FirebaseFirestore.instance.collection('follows').doc(widget.followedId);
-        //ボタン実行側ドキュメントのフォローフィールドに相手側のUIDを追加
-        DocumentSnapshot followingSnapshot = await transaction.get(followingDoc);//ドキュメント取得
-        List<String> myFollowList = followingSnapshot.get('myFollowingList') as List<String>;//リスト取得
-
-        if (isFollow) {
-          myFollowList.add(widget.followedId);//リストに追加
-        } else {
-          myFollowList.remove(widget.followedId);//リストから削除
-        }
-        await transaction.update(followingDoc, {'myFollowingList': myFollowList});
-
-
-        //相手側ドキュメントのフォロワーフィールドにボタン実行側のUIDを追加
-        DocumentSnapshot followedSnapshot = await transaction.get(followedDoc);//ドキュメント取得
-        List<String> myFollowerList = followedSnapshot.get('myFollowerList') as List<String>;//リスト取得
-
-        if(isFollow){
-          myFollowerList.add(widget.followingId);//リストに追加
-        }else{
-          myFollowerList.remove(widget.followingId);//リストから削除
-        }
-        await transaction.update(followedDoc, {'myFollowerList': myFollowerList});
-
-      });
-      } catch (e) {
-      // エラー処理
-      print('Error: $e');
-    }
-  }*/
-
-  Future<void> _toggleFollow() async {
-    try {
-      // フォローしているか確認
-      DocumentSnapshot followingSnapshot = await FirebaseFirestore.instance
-          .collection('follows')
-          .doc(uid)
-          .get();
-
-      // フォローリストを取得
-      Map<String, dynamic>? followingData = followingSnapshot.data() as Map<String, dynamic>?;
-      //List<String> myFollowList = followingData?['myFollowingList'] as List<String>; // null安全な取得
-      //上のコードワンちゃんダメかもしれない
-      //List<String> myFollowList = followingSnapshot.get('myFollowingList') ?? [];
-
-      // フォロー/フォロー解除
-      bool isFollowing = followingData?['myFollowingList'].contains(widget.followedId);
-      await FirebaseFirestore.instance
-          .collection('follows')
-          .doc(uid)
-          .update({
-        'myFollowingList': isFollowing
-            ? FieldValue.arrayRemove([widget.followedId])//true
-            : FieldValue.arrayUnion([widget.followedId]),//false
-        'myFollowingCount': isFollowing
-            ? FieldValue.increment(-1)
-            : FieldValue.increment(1),
-      });
-
-      // 相手のフォローリストも更新 (同様の処理を繰り返す)
-      // フォローしているか確認
-      DocumentSnapshot followedSnapshot = await FirebaseFirestore.instance
-          .collection('follows')
-          .doc(widget.followedId)
-          .get();
-
-      // フォローリストを取得
-
-      Map<String, dynamic>? followedData = followedSnapshot.data() as Map<String, dynamic>?;
-      //List<String> myFollowedList = followedData?['myFollowerList'] ?? [];
-      //上のコードワンちゃんダメかもしれない
-      //List<String> myFollowedList = followedSnapshot.get('myFollowedList') ?? [];
-
-      // フォロー/フォロー解除
-      bool isFollowed = followedData?['myFollowerList'].contains(uid);
-      await FirebaseFirestore.instance
-          .collection('follows')
-          .doc(widget.followedId)
-          .update({
-        'myFollowerList': isFollowed
-            ? {FieldValue.arrayRemove([uid])}
-            : {FieldValue.arrayUnion([uid])},
-        'myFollowerCount': isFollowed
-            ? FieldValue.increment(-1)
-            : FieldValue.increment(1),
-      });
-
-
-    } catch (e) {
-      print('Error: $e');
-    } finally {
-      setState(() {
-        _isFollowed = !_isFollowed;
-      });
-    }
-  }
+  String currentUid = FirebaseAuth.instance.currentUser?.uid ?? '未登録';
 
   @override
-  Widget build(BuildContext context){
-     return StreamBuilder<DocumentSnapshot>(
+  Widget build (BuildContext context){
+    return StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance//ボタン実行者のフォローリスト取得
             .collection('follows')
-            .doc(uid)
+            .doc(currentUid)
             .snapshots(),
         builder: (context, snapshot) {
 
@@ -151,21 +84,107 @@ class _FollowButtomState extends State<FollowButtom>{
           }
 
           return ElevatedButton(
-              child: Text(
-                _isFollowed ? 'フォロー解除' : 'フォロー',//　?trueのとき :falseのとき
-              ),
-              onPressed: () {
-                 debugPrint('a');
-                if (uid == '未登録') {
-                  print('ログインしてください');
-                } else {
-                  print('mazukoko');
-                  //await Follow(_isFollowed);
-                  _toggleFollow();
+                child: Text(
+                  _isFollowed
+                      ? 'フォロー中' //　?trueのとき
+                      : 'フォロー',// :falseのとき
+                ),
+                onPressed: () async{
+                  if (currentUid == '未登録') {
+                    print('ログインしてください');
+                  } else {
+                    //フォロー関係のFirestore処理// 状態を更新
+                    await _toggleFollow(currentUid, widget.followedId);
+                    setState(() {
+                      _isFollowed = !_isFollowed;
+                    });
+                  }
                 }
-              }
           );
         }
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+/*
+// 1. フォロー中のユーザーリストの　Stream の提供
+final followsStreamProvider = StreamProvider.family<DocumentSnapshot?, String>((ref, targetUserId) {
+  final currentUserId = FirebaseAuth.instance.currentUser!.uid; // ログインユーザーID
+  return FirebaseFirestore.instance
+      .collection('follows')
+      .doc(currentUserId)
+      .snapshots();
+});
+
+// 2. StateNotifierProviderによる状態管理
+class IsFollowingNotifier extends StateNotifier<bool?> {
+  final String currentUserId;
+  final String targetUserId;
+  IsFollowingNotifier(this.currentUserId, this.targetUserId): super(null);
+
+  Future<bool> fetchFollowingStatus() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('follows')
+        .doc(currentUserId)
+        .get();
+
+    if (snapshot.exists) {
+      Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+      final following = data['following'] as List<dynamic> ?? [];
+      return state = following.contains(targetUserId);
+    } else {
+      return state = false;
+    }
+  }
+
+  Future<void> toggle(String followingId, String followedId ) async {
+    await _toggleFollow(followingId, followedId);
+    state = !state!;
+  }
+}
+
+final isFollowingProvider = StateNotifierProvider.family<IsFollowingNotifier, bool, String>(
+      (ref, targetUserId) => IsFollowingNotifier(
+          FirebaseAuth.instance.currentUser!.uid, targetUserId
+      )..fetchFollowingStatus(),
+);
+
+//フォローボタン
+class FollowButtom extends ConsumerWidget{
+  final String followedId; //相手側（フォローされるユーザー）
+  FollowButtom({super.key, required this.followedId});
+  final String currentUid = FirebaseAuth.instance.currentUser?.uid ?? '未登録';
+
+  @override
+  Widget build(BuildContext context,WidgetRef ref){
+    ref.read(isFollowingProvider(followedId).notifier).fetchFollowingStatus()//Providerのbool値を参照
+
+    return ElevatedButton(
+               child: Text(
+                 ref.read(isFollowingProvider(followedId).notifier).fetchFollowingStatus()//Providerのbool値を参照
+                     ? 'フォロー中' //　?trueのとき
+                     : 'フォロー',// :falseのとき
+               ),
+               onPressed: () async{
+                 if (currentUid == '未登録') {
+                   print('ログインしてください');
+                 } else {
+                   //フォロー関係のFirestore処理// 状態を更新
+                   await ref.read(isFollowingProvider(followedId).notifier).toggle(currentUid, followedId);
+
+                 }
+               });
+
+        }
+}*/
+

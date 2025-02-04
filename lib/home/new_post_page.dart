@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,9 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:frame/home/timeline_page.dart';
-import 'package:image_cropper/image_cropper.dart';
+import 'package:frame/ui_widgets/bottom_bar.dart';
 import 'package:image_picker_web/image_picker_web.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image/image.dart' as img;
 
@@ -41,7 +39,7 @@ class _NewPostPageState extends State<NewPostPage>{
   int _currentIndex = 0;
   //次へ
   void _nextImage() {
-    if(_images!.length != null){
+    if(_images?.length != null){
       setState(() {
         _currentIndex = (_currentIndex + 1) % _images!.length;
       });
@@ -49,7 +47,7 @@ class _NewPostPageState extends State<NewPostPage>{
   }
   //戻る
   void _backImage() {
-    if(_images!.length != null){
+    if(_images?.length != null){
       setState(() {
         _currentIndex = (_currentIndex - 1) % _images!.length;
       });
@@ -61,16 +59,39 @@ class _NewPostPageState extends State<NewPostPage>{
     setState(() {
       _tags.add(_tagsController.text);
     });
-
   }
 
 
 //選択された画像を画面に表示する（複数）//追加してくスタイル
   Future<void> _pickMultiImage() async {
+    //処理中はサークルインジケーター
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          ModalBarrier(
+            color: Colors.black.withOpacity(0.5), // 半透明のバリア
+            dismissible: false, // タッチでバリアを消せないようにする
+          ),
+          Center(
+            child: Column(
+              children: [
+                //テキストのデザインに難あり
+                Text('ローディング中',
+                  style:TextStyle(
+                      color: Colors.white,
+                      fontSize: 30
+                  ) ,),
+                CircularProgressIndicator(), // インジケーター
+              ],
+            )
+          ),
+        ],
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+    try{
     final Uint8List? pickedFile = await ImagePickerWeb.getImageAsBytes();
-
     if (pickedFile != null) {
-
       //Uint8List形式のバイトデータをデコードし、Imageオブジェクトとして返します
       final originalImage = img.decodeImage(pickedFile);
       // リサイズ処理 (例: 幅800pxにリサイズ,高さは、元の画像の縦横比を維持して自動的に調整)
@@ -82,31 +103,89 @@ class _NewPostPageState extends State<NewPostPage>{
           _currentIndex =  _images!.length - 1;
           errorMessage = '';
         });
+    }}catch(e){
+      return print('$e');
+    }finally{
+      // インジケーターを非表示にする
+      _overlayEntry!.remove();
+      _overlayEntry = null;
     }
   }
 
+  OverlayEntry? _overlayEntry;
 
   //投稿をFirestoreに登録　//ユーザーごとに分けて保存するかすべてをまとめて保存か？
   Future<void> setFirestore ()async{
-    final user = FirebaseAuth.instance.currentUser;
-    String v4Uuid = uuid.v4();
-    if (user != null) {
-      debugPrint('セットします');
-      await FirebaseFirestore.instance.collection('posts').doc(v4Uuid)
-          .set({
-        'userUid': user.uid,
-        'imageUrl': _imageUrls,
-        'caption': _captionController.text,
-        'createdAt': FieldValue.serverTimestamp(),
-        'like': 0,
-        'bookmark':0,
-        'postId':v4Uuid,
-        'tags': _tags
-      });
+    // インジケーターを表示
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          ModalBarrier(
+            color: Colors.black.withOpacity(0.5), // 半透明のバリア
+            dismissible: false, // タッチでバリアを消せないようにする
+          ),
+          Center(
+              child: Column(
+                children: [
+                  Text('ローディング中',
+                    style:TextStyle(
+                      color: Colors.white,
+                      fontSize: 30
+                    ) ,),
+                  CircularProgressIndicator(), // インジケーター
+                ],
+              )
+          ),
+        ],
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+
+    try{
+      //画像のアップロード
+      for (var image in _images!) {
+        try {
+          // Firebase Storageへのアップロード
+          //Storageの参照を取得
+          Reference ref = FirebaseStorage.instance.ref().child('images/${DateTime.now().millisecondsSinceEpoch}.jpg');
+          UploadTask uploadTask = ref.putData(image);
+          TaskSnapshot snapshot = await uploadTask;
+          //StrageのURLを取得
+          String downloadUrl = await snapshot.ref.getDownloadURL();
+
+          // アップロードされた画像のURLをリストに追加
+          _imageUrls.add(downloadUrl);
+        } catch (e) {
+          print('Error uploading image: $e');
+        }
+      }
+      //Firestoreに登録
+      final user = FirebaseAuth.instance.currentUser;
+      String v4Uuid = uuid.v4();
+      if (user != null) {
+        return
+          await FirebaseFirestore.instance.collection('posts').doc(v4Uuid)
+              .set({
+            'userUid': user.uid,
+            'imageUrl': _imageUrls,
+            'caption': _captionController.text,
+            'createdAt': FieldValue.serverTimestamp(),
+            'like': 0,
+            'bookmark':0,
+            'postId':v4Uuid,
+            'tags': _tags
+          });
+      }
+    }catch(e){
+      print('エラー: $e');
+    }finally {
+      // インジケーターを非表示にする
+      _overlayEntry!.remove();
+      _overlayEntry = null;
     }
   }
 
-  Future<void> uploadImages() async {
+  /*Future<void> uploadImages() async {
     for (var image in _images!) {
       try {
         // Firebase Storageへのアップロード
@@ -123,8 +202,7 @@ class _NewPostPageState extends State<NewPostPage>{
         print('Error uploading image: $e');
       }
     }
-  }
-
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +218,7 @@ class _NewPostPageState extends State<NewPostPage>{
                 padding: const EdgeInsets.all(16.0),
                 child:Container(
                   alignment: Alignment.center,
-                  width: imageWidth,
+                  //width: imageWidth,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -151,7 +229,7 @@ class _NewPostPageState extends State<NewPostPage>{
                         padding: EdgeInsets.all(30),
                         child: SizedBox(
                           width: imageWidth*0.7,
-                          height: imageWidth*0.7,
+                          height: imageWidth*0.4,
                           child:Container(
 
                               child: (_images != [] && _images!.length > 0)
@@ -208,13 +286,6 @@ class _NewPostPageState extends State<NewPostPage>{
                               style: ElevatedButton.styleFrom(
                                 shape: CircleBorder(),),
                               child: Icon(Icons.arrow_forward),
-                            ),
-                            //追加
-                            ElevatedButton(
-                              onPressed: _pickMultiImage,
-                              style: ElevatedButton.styleFrom(
-                                shape: CircleBorder(),),
-                              child: Icon(Icons.add_a_photo),
                             ),
                             //削除
                             ElevatedButton(
@@ -291,10 +362,11 @@ class _NewPostPageState extends State<NewPostPage>{
                                         ),
                                         SizedBox(width: 5),
                                         ElevatedButton(
-                                            onPressed: (){
+                                            onPressed: ()async{
                                               if(_tagsController.text != ''){
-                                                _addTag();
+                                                 _addTag();
                                               }
+                                              _tagsController.clear();
                                             },
                                             child: Text('タグを追加')
                                         )
@@ -320,8 +392,7 @@ class _NewPostPageState extends State<NewPostPage>{
                                   });
                                   debugPrint('空白です');
                                 }else{
-                                  await uploadImages();
-                                  setFirestore();
+                                  await setFirestore();
                                   Navigator.of(context).push(
                                     MaterialPageRoute(builder: (context) {
                                       return TimelinePage();
@@ -338,6 +409,7 @@ class _NewPostPageState extends State<NewPostPage>{
         )
               ),
         ),
+          bottomNavigationBar: BottomBar(),
         );
       },
     );

@@ -1,33 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:frame/home/make_timeline/make_timeline_list_contents.dart';
 
 //タイムラインの「リストタイルを並べる」担当
 
-class MakeTimelineList extends StatefulWidget{
-  final Stream<QuerySnapshot<Object?>> querySnapshot;
-  //final Widget onSuccess;
+class MakeTimelineList extends StatelessWidget{
+  final Future<QuerySnapshot<Object?>> querySnapshot;
 
   const MakeTimelineList({super.key,required this.querySnapshot});
-  @override
-  State<MakeTimelineList> createState() => _MakeTimelineListState();
-}
-
-class _MakeTimelineListState extends State<MakeTimelineList> {
-
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
+    return FutureBuilder<QuerySnapshot>(
       //投稿情報の存在確認
-        stream: widget.querySnapshot, //受け取る
+        future: querySnapshot, //受け取る
         builder: (BuildContext context,
             AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.hasError) {
             //検索データが見つからなかった場合
             debugPrint('データ拾えてない');
-            return Center(
+            return const Center(
               child: Text(
                 '投稿がありません',
                 style: TextStyle(
@@ -39,8 +31,9 @@ class _MakeTimelineListState extends State<MakeTimelineList> {
             );
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
+            debugPrint('投稿検索中');
             //ロード中
-            return Center(
+            return const Center(
                 child: Column(
                   children: [
                     CircularProgressIndicator(),
@@ -55,10 +48,15 @@ class _MakeTimelineListState extends State<MakeTimelineList> {
                   ],)
             );
           }
-          if (snapshot.data != null && snapshot.data!.docs.length > 0) {
+          if (snapshot.data != null && snapshot.data!.docs.isNotEmpty) {
+            debugPrint('データがある場合の処理');
             //データがある場合の処理
             //投稿者情報がない場合もリストタイルが生まれてしまうので画面が変になる→SizeBoxで躱す
-            return SizedBox.shrink(child: ListView.builder(
+            return  ListView.builder(
+                //ScrollPhysics
+              //physics: const BouncingScrollPhysics(),
+                physics: const AlwaysScrollableScrollPhysics(),
+                shrinkWrap: true,
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
                   final DocumentSnapshot document = snapshot.data!
@@ -66,11 +64,12 @@ class _MakeTimelineListState extends State<MakeTimelineList> {
                   Map<String, dynamic> postData = document.data()! as Map<String, dynamic>;
 
                   //投稿者のユーザー情報を取得する
-                  return StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
+                  //ここ別関数で済ます？ buiderしなくていい
+                  return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
                           .collection('users')
                           .doc(postData['userUid'])
-                          .snapshots(),
+                          .get(),
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
                           //取得失敗
@@ -81,7 +80,7 @@ class _MakeTimelineListState extends State<MakeTimelineList> {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           //ロード中
-                          return Center(
+                          return const Center(
                               child: Column(
                                 children: [
                                   CircularProgressIndicator(),
@@ -97,6 +96,7 @@ class _MakeTimelineListState extends State<MakeTimelineList> {
                           );
                         }
                         if (snapshot.data!.exists) {
+                          debugPrint('データがあるngo');
                           //リストタイルの中身部分
                           //別ページのクラスに外注
                           Map<String, dynamic> postUserData = snapshot.data!
@@ -109,10 +109,10 @@ class _MakeTimelineListState extends State<MakeTimelineList> {
                         }
                         else {
                           debugPrint('投稿者情報の取得に失敗しました');
-                          return SizedBox();
+                          return const SizedBox();
                         }
                       });
-                }),);
+                });
           }
           else {
             //普通にエラーで検索することすらダメだった場合

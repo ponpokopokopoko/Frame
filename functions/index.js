@@ -18,6 +18,24 @@ exports.createNewUser = functions.auth.user().onCreate(async (user) => {
       customClaimsSet: true,
     });
 
+
+    await admin.firestore().collection("users").doc(user.uid).set({
+      "email": user.email, // メールアドレスどうしよ
+      "uid": user.uid,
+      // サーバー時刻で作成日時を記録
+      "createdAt": admin.firestore.FieldValue.serverTimestamp(),
+      "backgroundImage": null, // 準備できたら初期画像？
+      "iconImage": null, // 初期画像
+      "userName": "unknown", // もしくはnoname
+      "userId": user.uid.substring(0, 9), // 初期ID(uidの頭８文字)
+    });
+    await admin.firestore().collection("follows").doc(user.uid).set({
+      "myFollowingList": ["a"], // 初期のaが必要ないかも
+      "myFollowerList": ["a"],
+      "myFollowingCount": 0,
+      "myFollowerCount": 0,
+    });
+
     console.log("Custom claims set for user:", user.uid);
   } catch (error) {
     console.error("Error setting custom claims:", error);

@@ -19,10 +19,17 @@ class PostIconImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap:  onTap,
-      child: CircleAvatar(
-        backgroundImage: CachedNetworkImageProvider(iconImage),
-        radius: iconSize, // アイコンの半径
-      ),
+        child: iconImage != ''
+        //アイコン画像を設定済の場合
+          ? CircleAvatar(
+             radius: iconSize, // アイコンの半径
+             backgroundImage: CachedNetworkImageProvider(iconImage),
+           )
+          //設定してない場合→初期アイコン
+          :CircleAvatar(
+             radius: iconSize, // アイコンの半径
+              child: Icon(Icons.person), // 初期アイコン,
+           )
     );
   }
 }

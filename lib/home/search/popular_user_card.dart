@@ -36,8 +36,7 @@ class PopularUserCard extends StatelessWidget{
                   Text(map['userId'],style: TextStyle(color: CupertinoColors.systemGrey3),),
 
                   //フォローボタン
-                  FollowButtom(
-                      followedId: map['uid']),
+                  FollowButton(followedId: map['uid']),
 
                   //下にセット投稿３枚添える
                   /* Row(

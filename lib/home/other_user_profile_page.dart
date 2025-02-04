@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:frame/follower_view_part.dart';
+import 'package:frame/home/my_account/my_account_top.dart';
 import 'package:frame/ui_widgets/bottom_bar.dart';
 import 'package:frame/ui_widgets/buttons/follow_button.dart';
 import 'package:frame/ui_widgets/post_parts/post_icon_image_widget.dart';
@@ -35,128 +37,176 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage>{
         .arguments;
 
     if (postUid is String) {
+      if(postUid == currentUid){
+        return MyAccountTopPage();
+      }else{
       return Scaffold(
         appBar: AppBar(title: Text('ユーザープロフィール')),
-        body: FutureBuilder<QuerySnapshot>(
-          future: FirebaseFirestore.instance
-              .collection('users')
-              .where('uid', isEqualTo: postUid)
-              .get(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return CircularProgressIndicator();
-            } else if (snapshot.hasError) {
-              return Text('エラーが発生しました');
-            }
+        body: SingleChildScrollView(
+          child: FutureBuilder<QuerySnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('users')
+                .where('uid', isEqualTo: postUid)
+                .get(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator();
+              } else if (snapshot.hasError) {
+                return Text('エラーが発生しました');
+              }
 
-            if (snapshot.data!.docs.isNotEmpty) {
-              final DocumentSnapshot document = snapshot.data!
-                  .docs[0];
-              Map<String, dynamic> userData = document.data()! as Map<String, dynamic>;
+              if (snapshot.data!.docs.isNotEmpty) {
+                final DocumentSnapshot document = snapshot.data!
+                    .docs[0];
+                Map<String, dynamic> userData = document.data()! as Map<String, dynamic>;
 
-              return LayoutBuilder(
-                  builder: (context, constraints) {
-                    // 画面の幅に応じて画像の幅を調整 (例)
-                    //final imageWidth = constraints.maxWidth * 0.7; // 画面幅の50%
-                    return Column(
-                      children: [
-                        ///ユーザーのプロフィール
-                        Container(
-                          child:Column(
+                return Column(
+                  children: [
+                    ///ユーザーのプロフィール
+                    Container(
+                        child:Column(
                             children: [
                               //背景画像
+                              //背景画像
                               Container(
-                                height: constraints.maxHeight * 0.2,
+                                height: 150,
+                                decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                      image: (userData['backgroundImage'] != '')//三項演算子を使う
+                                      //背景画像を設定してる場合
+                                          ?NetworkImage(userData['backgroundImage'])
+                                      //設定してない場合
+                                          :AssetImage('assets/images/S__207101993.jpg'), // 初期画像
+                                      fit: BoxFit.cover
+                                  ),
+                                ),
+                              ),
+                              /*Container(
+                                height: 150,//constraints.maxHeight * 0.2,
                                 child: FittedBox(
                                   fit: BoxFit.fitWidth,
                                   child: Image.network(userData['backgroundImage'] ?? '' ),
                                 ),
-                              ),
+                              ),*/
 
                               SizedBox(height: 5),
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child:Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start, //  これを追加
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Column(
+                                          children: [
+                                            (userData['iconImage'] != '')
+                                            //アイコン画像を設定済の場合
+                                                ? CircleAvatar(
+                                              radius: 50,
+                                              backgroundImage: NetworkImage(userData['iconImage']),
+                                            )
+                                            //設定してない場合→初期アイコン
+                                                :CircleAvatar(
+                                              radius: 50,
+                                              child: Icon(Icons.person), // 初期アイコン,
+                                            ),
+                                            FollowerViewPart(uid:postUid),
+                                          ],
+                                        ),
 
-                              //アイコン
-                              PostIconImage(
-                                  iconImage: userData['iconImage'],
-                                  iconSize: 30,
-                                  onTap: () {
-                                    Text('a');
-                                  }
-                                  ),
-                              SizedBox(height: 5),
-                              //名前
-                              Text(userData['userName'] ?? 'a'),
-                              SizedBox(height: 5),
-                              //Bio
-                              Visibility(
-                                  visible: userData['userBio'] != '',
-                                  child: Column(children: [
-                                    Text(userData['userBio']),
-                                    SizedBox(height: 5),
-                                  ],)
+                                        Spacer(), // 空きスペースを埋める
+                                        FollowButton(followedId: userData['uid'] as String),
+                                        // 右端に配置したいウィジェット
+                                      ],
+                                    ),
+
+                                    SizedBox(height: 16),
+
+                                    /// アイコンと情報
+                                    ///id（フォント、サイズ、色の調整が必要）
+                                    Row(
+                                      children: [
+                                        Icon(Icons.person),
+                                        SizedBox(width: 8),
+                                        Text(userData['userId']),
+                                      ],
+                                    ),
+                                    ///名前（フォント、サイズ、色の調整が必要）
+                                    Row(
+                                      children: [
+                                        Icon(Icons.person),
+                                        SizedBox(width: 8),
+                                        Text(userData['userName']),
+                                      ],
+                                    ),
+
+                                    ///bio　（フォント、サイズ、色の調整,複数行にできる必要）
+                                    Row(
+                                      children: [
+                                        Icon(Icons.info),
+                                        SizedBox(width: 8),
+                                        Text(userData['userBio']),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.person),
+                                        SizedBox(width: 8),
+                                        Text(userData['userLink']),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                              //link
-                              Visibility(
-                                visible: userData['userLink'] != '',
-                                  child: Column(children: [
-                                    Text(userData['userLink']??'a'),
-                                    SizedBox(height: 5),
-                                  ],)
-                              ),
-                             FollowButtom(followedId: userData['uid'] as String),
                             ]
-                          )
-                        ),
+                        )
+                    ),
 
-                        ///ここで分ける
-                        // 投稿一覧
-                        Expanded(
-                          child: StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('posts')
-                                .where('userUid', isEqualTo: postUid)
-                                .snapshots(),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasError) {
-                                debugPrint('1');
-                                return Text('エラーが発生しました');
+                    ///ここで分ける
+                    // 投稿一覧
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('posts')
+                          .where('userUid', isEqualTo: postUid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          debugPrint('1');
+                          return Text('エラーが発生しました');
 
-                              }
+                        }
 
-                              if (snapshot.data!.docs.isEmpty || snapshot.data!.docs == null) {
-                                return Text('投稿がありません');
-                              }
+                        if (snapshot.data!.docs.isEmpty || snapshot.data?.docs == null) {
+                          return Text('投稿がありません');
+                        }
 
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                debugPrint('3');
-                                return CircularProgressIndicator();
-                              }
-                              if(snapshot.data!.docs.isNotEmpty && snapshot.data!.docs != null){
-                                debugPrint('46');
-                                return PostsGridviewPart(snapshot: snapshot);
-                              }
-                              else{
-                                debugPrint('6');
-                                return Text('Error');
-                              }
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          debugPrint('3');
+                          return CircularProgressIndicator();
+                        }
+                        if(snapshot.data!.docs.isNotEmpty && snapshot.data?.docs != null){
+                          debugPrint('46');
+                          return PostsGridviewPart(snapshot: snapshot);
+                        }
+                        else{
+                          debugPrint('6');
+                          return Text('Error');
+                        }
 
-                            },
-                          ),
-                        ),
-                      ],
-                    );
-                  });
-
-
-
-            } else {
-              return Text('ユーザーが見つかりません');
-            }
-          },
+                      },
+                    ),
+                  ],
+                );
+              } else {
+                return Text('ユーザーが見つかりません');
+              }
+            },
+          ),
         ),
         bottomNavigationBar: BottomBar(),
       );
+      }
     } else {
       return Text('投稿者の情報が取得できませんでした');
     }

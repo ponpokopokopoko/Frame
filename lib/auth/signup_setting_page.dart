@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:frame/home/timeline_page.dart';
 import 'package:frame/home/my_account/my_account_top.dart';
 import 'package:universal_html/html.dart';
 
@@ -38,20 +37,13 @@ class _SignupSettingPageState extends State<SignupSettingPage> {
     if (user != null) {
       await FirebaseFirestore.instance.collection('users').doc(user.uid)
           .update({
-        'backgroundImage': backgroundImageUrl,
-        'iconImage': iconImageUrl,
-        'userName': _userNameController.text,
-        'userId': _userIdController.text,
+        'backgroundImage': backgroundImageUrl,//もしくは初期画像
+        'iconImage': iconImageUrl,//もしくは初期画像
+        'userName': _userNameController.text,//もしくはnoname
+        'userId': _userIdController.text,//もしくはｕｉｄ
         'userBio': _userBioController.text,
         'userLink': _userLinkController.text,
       });
-      await FirebaseFirestore.instance.collection('follows').doc(user.uid)
-          .set({
-        'myFollowingList':['a'],
-        'myFollowerList':['a'],
-        'myFollowingCount':0,
-        'myFollowerCount':0
-          });
     }
   }
 
