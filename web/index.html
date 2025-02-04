@@ -19,6 +19,7 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  <meta name="google-signin-client_id" content="468651832253-9ojsotqbcc510ompp0rroa2r1m5np60u.apps.googleusercontent.com">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -31,17 +32,14 @@
 
   <title>frame</title>
   <link rel="manifest" href="manifest.json">
+  <script src="https://apis.google.com/js/api.js"></script>
+
 </head>
 <body>
-  <input type="file" id="fileInput">
-  <button onclick="uploadFile()">ファイルをアップロード</button>
-
-  <script src="flutter_bootstrap.js" async></script>
-  <script src="web/my_script.js"></script>
-  <script src="web/edit_script.js"></script>
 
   <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js"></script>
+  <script> gapi.load('client:auth2', () => {}); </script>
 
 </body>
 </html>

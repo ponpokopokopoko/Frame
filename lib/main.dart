@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frame/auth_page.dart';
@@ -9,7 +11,8 @@ import 'package:frame/home/tag_search/tag_search_top_page.dart';
 import 'package:frame/home/timeline_page.dart';
 import 'package:frame/login/login_password.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:frame/sign_up/signpu_password_page.dart';
+import 'package:frame/sign_up/signup_setting_page.dart';
+import 'package:universal_html/html.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async{
@@ -17,6 +20,9 @@ Future<void> main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // FirebaseUserのログイン状態が確定するまで待つ
+  final firebaseUser = await FirebaseAuth.instance.userChanges().first;
+
   runApp(
       ProviderScope(
         child:FrameApp()
@@ -25,6 +31,8 @@ Future<void> main() async{
 }
 
 class FrameApp extends StatelessWidget {
+
+  final _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +45,6 @@ class FrameApp extends StatelessWidget {
       ),
 
       routes: {
-        '/signup_password_page': (context) => SignupPasswordPage(),
         '/login_password':(context) => LoginPasswordPage(),
         '/my_account_profile_edit':(context) => MyAccountProfileEdit(),
         '/other_user_profile_page':(context) => OtherUserProfilePage(),
@@ -47,8 +54,98 @@ class FrameApp extends StatelessWidget {
         //'/tag_search_top_page':(context) => TagSerchTopPage(),
       },
       // ログイン画面を表示
-      home:   AuthPage(),
+      //現在のログイン状況を確認し、状態に寄って表示ページを変える
+      home: StreamBuilder<User?>(
+        stream: _auth.authStateChanges(),
+        builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CircularProgressIndicator();
+          } else if(snapshot.hasData) {
+            debugPrint('1');
+            //ログインしている場合（Google認証の場合リダイレクトでここに飛んできて、この条件に入っていく）
+              final user = snapshot.data;
+            debugPrint(user?.uid);//uidちゃんと機能してるか？これだめなら検索できない
+              return StreamBuilder(
+                  stream: FirebaseFirestore.instance
+                      .collection('user_status')
+                      .doc(user?.uid)
+                      .snapshots(),
+                  builder: (BuildContext context,
+                      AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>
+                      snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      debugPrint('11');
+                      return CircularProgressIndicator(); // 待機
+                    } else if (snapshot.hasError) {
+                      debugPrint('12');
+                      return AuthPage(); // エラーの場合ちゃんとログインしてもらう
+                      //snapshot.data!.data() != null :
+                      // この条件で弾かれるらしい。どうして？
+                      //snapshot.data!.data() なぜNull →ドキュメントのフィールドが設定される前に読み込んでしまうため
+                      //フィールドの読み込みを待つ方法
+                    } else if (snapshot.hasData && snapshot.data != null /*&& snapshot.data!.data() != null */) {
+                      debugPrint('13');
+                      //final  DocumentSnapshot<Object?>? document = snapshot.data;
+                      final data = snapshot.data!.data() as Map<String, dynamic>;
+                      if (data['customClaimsSet'] == true) {
+                        debugPrint('131');
+                        //Firestoreに書き込みがあった場合→カスタムクレームを確認
+                        return FutureBuilder(
+                          future: _isNewUser(user!),//カスタムクレームチェック
+                          builder: (BuildContext context,
+                              AsyncSnapshot<bool> isNewUserSnapshot) {
+                            if (isNewUserSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              debugPrint('1311');
+                              return CircularProgressIndicator();
+                            } else if (isNewUserSnapshot.hasData) {
+                              debugPrint('1312');//ここまで
+                              if (isNewUserSnapshot.data!) {
+                                debugPrint('13121');
+                                return SignupSettingPage(); //カスタムクレームがtrue:新規ユーザーの場合
+                              } else {
+                                debugPrint('13122');
+                                return TimelinePage(); //false:既存ユーザーの場合タイムラインへ
+                              }
+                            } else {//カスタムクレームチェックに失敗した場合
+                              debugPrint('1313');
+                              return AuthPage();//SignupSettingPage();//ログインし直してもらう
+                            }
+                          },
+                        );
+                      } else {//アカウントがあるのにFirestoreに書き込みがない場合（そんな事態基本ありえないが）
+                        debugPrint('132');
+                        return AuthPage();//SignupSettingPage();//Text('Error:data[customClaimsSet] が存在しない');
+                      }
+                    } else {
+                      debugPrint('14');
+                      return AuthPage();//Text('Error: Could not determine user status');
+                    }
+                  });
+            } else {
+            debugPrint('2');
+            //ログインしていない場合
+              return AuthPage();
+            }
+        }
+      ),
     );
   }
 }
 
+Future<bool> _isNewUser(User user) async {
+  // 遅延処理(functionsでカスタムクレームをつけるのを待つ)
+  //await Future.delayed(Duration(seconds: 10)); // 1秒待つ
+  // ユーザーのカスタムクレームを取得
+  final idTokenResult = await user.getIdTokenResult(true);
+  final claims = idTokenResult.claims;
+
+  // 新規ユーザーかどうかを判定するカスタムクレームが存在するか確認
+  final isNewUser = claims!.containsKey('isNewUser');
+
+  // デバッグプリント
+  //debugPrint('isNewUser: $isNewUser');
+  debugPrint('関数動いてます');//関数動いてる
+
+  return isNewUser;
+}

@@ -3,6 +3,27 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+exports.createNewUser = functions.auth.user().onCreate(async (user) => {
+  try {
+    // 新規ユーザーに付与するカスタムクレーム
+    const customClaims = {
+      isNewUser: true,
+    };
+
+    // ユーザーにカスタムクレームを設定
+    await admin.auth().setCustomUserClaims(user.uid, customClaims);
+
+    // Firestoreのフラグ用ドキュメントを更新
+    await admin.firestore().collection("user_status").doc(user.uid).set({
+      customClaimsSet: true,
+    });
+
+    console.log("Custom claims set for user:", user.uid);
+  } catch (error) {
+    console.error("Error setting custom claims:", error);
+  }
+});
+
 exports.updateTagCounts = functions.firestore
     .document("posts/{postId}")
     .onWrite(async (change, context) => {

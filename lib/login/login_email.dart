@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:frame/auth_page.dart';
-import 'login_password.dart';
 
 
 class LoginEmailPage extends StatefulWidget{
@@ -13,6 +10,7 @@ class LoginEmailPage extends StatefulWidget{
 class _LoginEmailPageState extends State<LoginEmailPage>{
 
   String? _email ='';
+
 
   @override
   Widget build(BuildContext context){

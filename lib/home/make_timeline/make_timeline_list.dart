@@ -58,14 +58,12 @@ class _MakeTimelineListState extends State<MakeTimelineList> {
           if (snapshot.data != null && snapshot.data!.docs.length > 0) {
             //データがある場合の処理
             //投稿者情報がない場合もリストタイルが生まれてしまうので画面が変になる→SizeBoxで躱す
-            return ListView.builder(
+            return SizedBox.shrink(child: ListView.builder(
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
                   final DocumentSnapshot document = snapshot.data!
                       .docs[index];
-                  Map<String, dynamic> postData = document.data()! as Map<
-                      String,
-                      dynamic>;
+                  Map<String, dynamic> postData = document.data()! as Map<String, dynamic>;
 
                   //投稿者のユーザー情報を取得する
                   return StreamBuilder<DocumentSnapshot>(
@@ -114,7 +112,7 @@ class _MakeTimelineListState extends State<MakeTimelineList> {
                           return SizedBox();
                         }
                       });
-                });
+                }),);
           }
           else {
             //普通にエラーで検索することすらダメだった場合

@@ -27,7 +27,6 @@ class _SignupSettingPageState extends State<SignupSettingPage> {
   //変数の初期化
   String iconImageUrl = '';
   String backgroundImageUrl = '';
-
   String userId = 'no_id';
   String userName = 'unknown';
   String userBio = '';
@@ -37,7 +36,6 @@ class _SignupSettingPageState extends State<SignupSettingPage> {
   Future<void> setT() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      debugPrint('セットします');
       await FirebaseFirestore.instance.collection('users').doc(user.uid)
           .update({
         'backgroundImage': backgroundImageUrl,

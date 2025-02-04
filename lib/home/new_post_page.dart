@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -5,8 +7,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:frame/home/timeline_page.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker_web/image_picker_web.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image/image.dart' as img;
 
 class NewPostPage extends StatefulWidget{
   const NewPostPage({super.key});
@@ -62,9 +67,17 @@ class _NewPostPageState extends State<NewPostPage>{
 
 //選択された画像を画面に表示する（複数）//追加してくスタイル
   Future<void> _pickMultiImage() async {
-    final Uint8List? pickedFiles = await ImagePickerWeb.getImageAsBytes();
-    if (pickedFiles != null) {
-        _images!.add(pickedFiles);
+    final Uint8List? pickedFile = await ImagePickerWeb.getImageAsBytes();
+
+    if (pickedFile != null) {
+
+      //Uint8List形式のバイトデータをデコードし、Imageオブジェクトとして返します
+      final originalImage = img.decodeImage(pickedFile);
+      // リサイズ処理 (例: 幅800pxにリサイズ,高さは、元の画像の縦横比を維持して自動的に調整)
+      final resizedImage = img.copyResize(originalImage!, width: 800);
+      final jpgBytes = img.encodeJpg(resizedImage);
+
+      _images!.add(jpgBytes);
         setState(() {
           _currentIndex =  _images!.length - 1;
           errorMessage = '';
@@ -97,9 +110,11 @@ class _NewPostPageState extends State<NewPostPage>{
     for (var image in _images!) {
       try {
         // Firebase Storageへのアップロード
-        Reference ref = FirebaseStorage.instance.ref().child('images/${DateTime.now().millisecondsSinceEpoch}');
+        //Storageの参照を取得
+        Reference ref = FirebaseStorage.instance.ref().child('images/${DateTime.now().millisecondsSinceEpoch}.jpg');
         UploadTask uploadTask = ref.putData(image);
         TaskSnapshot snapshot = await uploadTask;
+        //StrageのURLを取得
         String downloadUrl = await snapshot.ref.getDownloadURL();
 
         // アップロードされた画像のURLをリストに追加
@@ -130,25 +145,49 @@ class _NewPostPageState extends State<NewPostPage>{
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                         //投稿写真
-                      //複数写真表示
+                      //１ブロック
                       Container(
-                        width: imageWidth*0.7,
+                        color: Colors.black26,
                         padding: EdgeInsets.all(30),
-                        child: AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: GestureDetector(
-                            child: (_images != null || _images!.isNotEmpty)
-                                && (_images!.length > _currentIndex && _currentIndex >= 0)
+                        child: SizedBox(
+                          width: imageWidth*0.7,
+                          height: imageWidth*0.7,
+                          child:Container(
+
+                              child: (_images != [] && _images!.length > 0)
                                 ? Image.memory(_images![_currentIndex])
-                                : Text('No image selected.'),
+                              : Container(),//Expanded(child: ColoredBox(color: Colors.black26))
+                              )
+
+                              /*//全体画像
+                              Positioned(
+                                  child:Image.memory(_images![_currentIndex] as Uint8List)
+                              ),
+                              //グラデで背景を白く
+                              Positioned(
+                                  child: child
+                              ),
+                              //トリミング後の画像
+                              Positioned(
+                                  child: Image.memory(_images![_currentIndex] as Uint8List)
+                              )
+                              //トリミング黒枠
+                              Positioned(
+                                  child: child
+                              ),*/
 
 
-                            onTap:(){
-                              _pickMultiImage();
-                            },
-                          ),
+
+
+
+                          /*(_images != null || _images!.isNotEmpty)
+                              && (_images!.length > _currentIndex && _currentIndex >= 0)
+                          //image型はキャストすれば使っていいの？
+                              ? Image.memory(_images![_currentIndex] as Uint8List)
+                              : Text('画像を選択してください'),*/
                         ),
                       ),
+
 
 
                       Container(
@@ -169,6 +208,13 @@ class _NewPostPageState extends State<NewPostPage>{
                               style: ElevatedButton.styleFrom(
                                 shape: CircleBorder(),),
                               child: Icon(Icons.arrow_forward),
+                            ),
+                            //追加
+                            ElevatedButton(
+                              onPressed: _pickMultiImage,
+                              style: ElevatedButton.styleFrom(
+                                shape: CircleBorder(),),
+                              child: Icon(Icons.add_a_photo),
                             ),
                             //削除
                             ElevatedButton(
