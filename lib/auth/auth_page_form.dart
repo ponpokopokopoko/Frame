@@ -16,7 +16,9 @@ class ErrorMessageNotifier extends StateNotifier<String?> {
   }
 }
 
-//consumerstatefulwidgetで離れたらエラー消し
+//consumerstatefulwidget　離れたらエラー文を消す？
+//FocusNode機能していません
+//エラーが上手く消せていない
 class AuthPageForm extends ConsumerStatefulWidget {
   final String which; //SignUpかLoginか
   const AuthPageForm({super.key, required this.which});
@@ -46,8 +48,8 @@ class _AuthPageFormState extends ConsumerState<AuthPageForm>{
   @override
   Widget build (BuildContext context){
     final errorMessage = ref.watch(errorMessageNotifierProvider);
-    final _passwordController = TextEditingController();
-    final _emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final emailController = TextEditingController();
 
     return Container(
       height: 200,
@@ -55,8 +57,9 @@ class _AuthPageFormState extends ConsumerState<AuthPageForm>{
       child: Column(
         children: [
           TextFormField(
-            decoration: InputDecoration(labelText: 'メールアドレス'),
-            controller:  _emailController,
+            decoration: const InputDecoration(
+                labelText: 'メールアドレス'),
+            controller:  emailController,
             focusNode: _emailFocusNode,
             //keyboardType: TextInputType.emailAddress, // TextInputType (必要に応じて)
             onEditingComplete: () {
@@ -70,11 +73,11 @@ class _AuthPageFormState extends ConsumerState<AuthPageForm>{
             },
           ),
 
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
 
           TextFormField(
-            decoration: InputDecoration(labelText: 'パスワード'),
-            controller: _passwordController,
+            decoration: const InputDecoration(labelText: 'パスワード'),
+            controller: passwordController,
             //フォームに入力されたらエラーメッセージの表示を消す
            // onChanged: ref.read(errorMessageProvider.notifier).state = null,
             focusNode: _passwordFocusNode,
@@ -97,25 +100,28 @@ class _AuthPageFormState extends ConsumerState<AuthPageForm>{
               errorMessage,
               style: TextStyle(color: Colors.red), // エラーメッセージの色を変更
             ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
 
           ElevatedButton(
-              child: Text('実行'),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white
+              ),
+              child: const Text('実行',style: TextStyle(color: Colors.black),),
               //登録かログインの処理
               //keyを受け取って条件分岐
               onPressed: ()async{
                 if(widget.which == 'Login'){
                   //ログイン
-                  final value = await LoginFunc(_emailController.text, _passwordController.text, context);
+                  final value = await LoginFunc(emailController.text, passwordController.text, context);
                   if(value is String){
                     ref.read(errorMessageNotifierProvider.notifier).updateState(value);
                 }else{
                   //登録処理
                   //成功したら遷移、失敗したらエラーメッセージ
-                  final value = await SignUpFunc(_emailController.text, _passwordController.text, context);
-                  if(value is String){
-                    ref.read(errorMessageNotifierProvider.notifier).updateState(value);
-                  }
+                  final value = await signUpFunc(emailController.text, passwordController.text, context);
+                    if(value is String){
+                      ref.read(errorMessageNotifierProvider.notifier).updateState(value);
+                    }
                   }
                 }
               }
@@ -127,7 +133,7 @@ class _AuthPageFormState extends ConsumerState<AuthPageForm>{
 }
 
 //登録処理をする関数
-Future<String?> SignUpFunc (String email,String password,BuildContext context)async{
+Future<String?> signUpFunc (String email,String password,BuildContext context)async{
   try {
     // メール/パスワードで登録
     final result = await FirebaseAuth.instance.createUserWithEmailAndPassword(

@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frame/home/search/popular_part.dart';
-import 'package:frame/ui_widgets/bottom_bar.dart';
+import 'package:frame/main_page.dart';
 
 //人気ユーザー表示用のProvider
 final popularUsersProvider = FutureProvider<List<Map<String,dynamic>>>((ref) async {
@@ -12,7 +12,7 @@ final popularUsersProvider = FutureProvider<List<Map<String,dynamic>>>((ref) asy
   final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
       .collection('follows')
       .orderBy('myFollowerCount', descending: true)
-      .limit(2)
+      .limit(5)
       .get();
   //各人に対してuidからusersコレクションのドキュメンント取得
   for (var doc in querySnapshot.docs) {
@@ -50,7 +50,7 @@ final popularPostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) as
     final querySnapshot = await FirebaseFirestore.instance
         .collection('posts')
         .orderBy('like', descending: true)
-        .limit(2) // 表示する投稿数
+        .limit(5) // 表示する投稿数
         .get();
 
     // Map<String, dynamic> 型へのキャストとnullチェック
@@ -80,119 +80,139 @@ final popularTagsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asy
   }
 });
 
-
-
 class SearchTopPage extends ConsumerWidget {
   const SearchTopPage({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('発見') ,
-        backgroundColor: Colors.grey,
-        
-      ),
-      body: SingleChildScrollView(
-          child: Column(
-            children: [
-              //人気ユーザー
-              Container(
-                height: 35,
-                padding: EdgeInsets.symmetric(vertical: 5),
-                child: const Row(
+    return Column(
+          children: [
+            Text('発見',
+                 style:TextStyle(
+                   fontSize: 24,
+                     color: Colors.white)),
+            Divider(
+              color: Colors.grey, // 線の色
+              thickness: 4.0, // 線の太さ
+              //indent: 20.0, // 左側の余白
+              //endIndent: 20.0, // 右側の余白
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
                   children: [
-                    Text('人気のユーザー',
-                        style: TextStyle(
-                          fontWeight: FontWeight.normal,
-                          fontSize: 20,
-                          color: Colors.grey
-                        )
+                    //人気ユーザー
+                    Container(
+                      height: 35,
+                      padding:const EdgeInsets.symmetric(vertical: 5),
+                      child: const Row(
+                        children: [
+                          SizedBox(width: 30),
+                          Text('人気のユーザー',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 18,
+                                  color: Colors.white
+                              )
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
 
-              SizedBox(height: 10,),
-
-              SizedBox(
-                  height: 200,
-                  child: Column(children: [
-                    PopularPart(
-                        asyncValue: ref.watch(popularUsersProvider),
-                        attribute: '人気ユーザー'
-                    )
-                  ],)
-              ),
-
-              SizedBox(height: 20),
-
-              //人気投稿
-              Container(
-                height: 35,
-                padding: EdgeInsets.symmetric(vertical: 5),
-                child: const Row(
-                  children: [
-                    SizedBox(width: 30),
-                    Text('人気の投稿',
-                        style: TextStyle(
-                          fontWeight: FontWeight.normal,
-                          fontSize: 16,
-                            color: Colors.grey
-                        )
+                    //SizedBox(height: 8,),
+                    Container(
+                        height: 200,
+                        child: Column(children: [
+                          PopularPart(
+                              asyncValue: ref.watch(popularUsersProvider),
+                              attribute: '人気ユーザー'
+                          )
+                        ],)
                     ),
-                  ],
-                ),
-              ),
 
-              Container(
-                  height: 200,
-                  child: Column(
-                      children: [
-                        PopularPart(
-                            asyncValue: ref.watch(popularPostsProvider),
-                            attribute: '人気投稿'
-                        )
-                      ])
-              ),
+                    SizedBox(height: 20),
 
-              SizedBox(height: 15),
-
-              //人気タグ
-
-              Container(
-                height: 35,
-                padding: EdgeInsets.symmetric(vertical: 5),
-                child: const Row(
-                  children: [
-                    Text('人気のタグ',
-                        style: TextStyle(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 20,
-                            color: Colors.grey
-                        )
+                    Divider(
+                      color: Colors.grey, // 線の色
+                      thickness: 1.0, // 線の太さ
+                      //indent: 20.0, // 左側の余白
+                      endIndent: 20.0, // 右側の余白
                     ),
+
+                    //人気投稿
+                    Container(
+                      height: 35,
+                      padding: EdgeInsets.symmetric(vertical: 5),
+                      child: const Row(
+                        children: [
+                          SizedBox(width: 30),
+                          Text('人気の投稿',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 18,
+                                  color: Colors.white
+                              )
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Container(
+                        height: 200,
+                        child: Column(
+                            children: [
+                              PopularPart(
+                                  asyncValue: ref.watch(popularPostsProvider),
+                                  attribute: '人気投稿'
+                              )
+                            ])
+                    ),
+
+
+                    SizedBox(height: 20),
+                    Divider(
+                      color: Colors.grey, // 線の色
+                      thickness: 1.0, // 線の太さ
+                      //indent: 20.0, // 左側の余白
+                      endIndent: 20.0, // 右側の余白
+                    ),
+
+                    //人気タグ
+
+                    Container(
+                      height: 35,
+                      padding: EdgeInsets.symmetric(vertical: 5),
+                      child: const Row(
+                        children: [
+                          SizedBox(width: 30),
+                          Text('人気のタグ',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 18,
+                                  color: Colors.white
+                              )
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    //SizedBox(height: 8,),
+
+                    SizedBox(
+                        height: 200,
+                        child: Column(children: [
+                          PopularPart(
+                              asyncValue: ref.watch(popularTagsProvider),
+                              attribute: '人気タグ'
+                          )
+                        ],)
+                    ),
+
                   ],
-                ),
-              ),
-
-              SizedBox(height: 10,),
-
-              SizedBox(
-                  height: 200,
-                  child: Column(children: [
-                    PopularPart(
-                        asyncValue: ref.watch(popularTagsProvider),
-                        attribute: '人気タグ'
-                    )
-                  ],)
-              ),
-
-            ],
-          )
-      ),
-      //body: ,
-      bottomNavigationBar: BottomBar(),
-    );
+                )
+            ),
+            )
+          ],
+        );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:frame/follows_listview.dart';
+import 'package:frame/navigation_rail.dart';
 
 class FollowerViewPart extends StatefulWidget{
   final String uid;
@@ -33,22 +34,32 @@ class _FollowerViewPartState extends State<FollowerViewPart>{
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
-                    return FollowsListview(data: data);
+                    return NavigationRailPart(widgetUI: FollowsListview(data: data));
                   },
                 );
                 },
               child: Row(
                 children: [
                   //押したらリストビュー表示
-                  Text('フォロー ${data['myFollowingCount']}'),
-                  Text('フォロワー ${data['myFollowerCount']}'),
+                  Text('フォロー:${data['myFollowingCount']}',
+                    style:TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12 )
+                  ),
+                  SizedBox(width: 8,),
+                  Text('フォロワー:${data['myFollowerCount']}',
+                    style:TextStyle(
+                        color: Colors.white70,
+                        fontSize:12 ),
+                  ),
                   // その他の情報を表示
                 ],
               ),
             );
           } else {
             // ドキュメントが存在しない場合
-            return Text('フォロー情報はありません');
+            return Text('フォロー情報はありません',
+            style:TextStyle(color: Colors.white70) ,);
           }
         }
         );

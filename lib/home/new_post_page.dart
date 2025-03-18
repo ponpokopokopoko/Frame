@@ -6,7 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:frame/home/timeline_page.dart';
-import 'package:frame/ui_widgets/bottom_bar.dart';
+import 'package:frame/navigation_rail.dart';
+//import 'package:frame/ui_widgets/main_page.dart';
 import 'package:image_picker_web/image_picker_web.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image/image.dart' as img;
@@ -54,7 +55,7 @@ class _NewPostPageState extends State<NewPostPage>{
     }
   }
 
- //入力されたタグをリストに追加
+  //入力されたタグをリストに追加
   void _addTag() {
     setState(() {
       _tags.add(_tagsController.text);
@@ -73,37 +74,37 @@ class _NewPostPageState extends State<NewPostPage>{
             dismissible: false, // タッチでバリアを消せないようにする
           ),
           Center(
-            child: Column(
-              children: [
-                //テキストのデザインに難あり
-                Text('ローディング中',
-                  style:TextStyle(
-                      color: Colors.white,
-                      fontSize: 30
-                  ) ,),
-                CircularProgressIndicator(), // インジケーター
-              ],
-            )
+              child: Column(
+                children: [
+                  //テキストのデザインに難あり
+                  Text('ローディング中',
+                    style:TextStyle(
+                        color: Colors.white,
+                        fontSize: 30
+                    ) ,),
+                  CircularProgressIndicator(), // インジケーター
+                ],
+              )
           ),
         ],
       ),
     );
     Overlay.of(context).insert(_overlayEntry!);
     try{
-    final Uint8List? pickedFile = await ImagePickerWeb.getImageAsBytes();
-    if (pickedFile != null) {
-      //Uint8List形式のバイトデータをデコードし、Imageオブジェクトとして返します
-      final originalImage = img.decodeImage(pickedFile);
-      // リサイズ処理 (例: 幅800pxにリサイズ,高さは、元の画像の縦横比を維持して自動的に調整)
-      final resizedImage = img.copyResize(originalImage!, width: 800);
-      final jpgBytes = img.encodeJpg(resizedImage);
+      final Uint8List? pickedFile = await ImagePickerWeb.getImageAsBytes();
+      if (pickedFile != null) {
+        //Uint8List形式のバイトデータをデコードし、Imageオブジェクトとして返します
+        final originalImage = img.decodeImage(pickedFile);
+        // リサイズ処理 (例: 幅800pxにリサイズ,高さは、元の画像の縦横比を維持して自動的に調整)
+        final resizedImage = img.copyResize(originalImage!, width: 800);
+        final jpgBytes = img.encodeJpg(resizedImage);
 
-      _images!.add(jpgBytes);
+        _images!.add(jpgBytes);
         setState(() {
           _currentIndex =  _images!.length - 1;
           errorMessage = '';
         });
-    }}catch(e){
+      }}catch(e){
       return print('$e');
     }finally{
       // インジケーターを非表示にする
@@ -129,8 +130,8 @@ class _NewPostPageState extends State<NewPostPage>{
                 children: [
                   Text('ローディング中',
                     style:TextStyle(
-                      color: Colors.white,
-                      fontSize: 30
+                        color: Colors.white,
+                        fontSize: 30
                     ) ,),
                   CircularProgressIndicator(), // インジケーター
                 ],
@@ -207,37 +208,44 @@ class _NewPostPageState extends State<NewPostPage>{
   @override
   Widget build(BuildContext context) {
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 画面の幅に応じて画像の幅を調整 (例)
-        final imageWidth = constraints.maxWidth * 0.7; // 画面幅の50%
-        //以下にUI
-        return  Scaffold(
-          body: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child:Container(
-                  alignment: Alignment.center,
-                  //width: imageWidth,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                        //投稿写真
-                      //１ブロック
-                      Container(
-                        color: Colors.black26,
-                        padding: EdgeInsets.all(30),
-                        child: SizedBox(
-                          width: imageWidth*0.7,
-                          height: imageWidth*0.4,
-                          child:Container(
+    return  Column(
+        children: [
+          const Text('新規投稿',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                ) ,),
+          const Divider(
+            thickness: 4,
+            color: Colors.grey,
+          ),
+          Expanded(
+          child:SingleChildScrollView(
+                  child:
+                  Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child:Container(
+                        alignment: Alignment.center,
+                        //width: imageWidth,
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              //投稿写真
+                              //１ブロック
+                              Container(
+                                color: Colors.black26,
+                                padding: EdgeInsets.symmetric(vertical: 5),
+                                child: SizedBox(
+                                    width:  MediaQuery.of(context).size.width*0.4,
+                                    height:  MediaQuery.of(context).size.height*0.4,
+                                    child:Container(
+                                      color: Colors.white30,
+                                      child: (_images != [] && _images!.length > 0)
+                                          ? Image.memory(_images![_currentIndex])
+                                          : Container(),//Expanded(child: ColoredBox(color: Colors.black26))
+                                    )
 
-                              child: (_images != [] && _images!.length > 0)
-                                ? Image.memory(_images![_currentIndex])
-                              : Container(),//Expanded(child: ColoredBox(color: Colors.black26))
-                              )
-
-                              /*//全体画像
+                                  /*//全体画像
                               Positioned(
                                   child:Image.memory(_images![_currentIndex] as Uint8List)
                               ),
@@ -258,160 +266,181 @@ class _NewPostPageState extends State<NewPostPage>{
 
 
 
-                          /*(_images != null || _images!.isNotEmpty)
+                                  /*(_images != null || _images!.isNotEmpty)
                               && (_images!.length > _currentIndex && _currentIndex >= 0)
                           //image型はキャストすれば使っていいの？
                               ? Image.memory(_images![_currentIndex] as Uint8List)
                               : Text('画像を選択してください'),*/
-                        ),
-                      ),
+                                ),
+                              ),
 
 
 
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10,vertical: 20),
-                        child: Row(
-                          children: [
-                            SizedBox(width: 40),
-                            //戻る
-                            ElevatedButton(
-                              onPressed: _backImage,
-                              style: ElevatedButton.styleFrom(
-                                shape: CircleBorder(),),
-                              child: Icon(Icons.arrow_back),
-                            ),
-                            //次へ
-                            ElevatedButton(
-                              onPressed: _nextImage,
-                              style: ElevatedButton.styleFrom(
-                                shape: CircleBorder(),),
-                              child: Icon(Icons.arrow_forward),
-                            ),
-                            //削除
-                            ElevatedButton(
-                              onPressed: (){
-                                if(_images!.isNotEmpty){
-                                  _images?.removeAt(_currentIndex);
-                                  setState(() {});}
-                                },
-                              style: ElevatedButton.styleFrom(
-                                shape: CircleBorder(),),
-                              child: Icon(Icons.delete),
-                            ),
-                            //追加
-                            ElevatedButton(
-                              onPressed: _pickMultiImage,
-                              style: ElevatedButton.styleFrom(
-                                shape: CircleBorder(),),
-                              child: Icon(Icons.add_a_photo),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 100,vertical: 20),
-                        child: Column(
-                              children: [
-                                SizedBox(width: 20),
-
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start, //  これを追加
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 10,vertical: 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    ///キャプション（初期状態で３行ぐらいにしたい）
-                                    Row(
+                                    SizedBox(width: 40),
+                                    //戻る
+                                    ElevatedButton(
+                                      onPressed: _backImage,
+                                      style: ElevatedButton.styleFrom(
+                                        shape: CircleBorder(),
+                                        backgroundColor: Colors.white
+                                      ),
+                                      child: Icon(Icons.arrow_back,color:Colors.black,),
+                                    ),
+                                    //次へ
+                                    ElevatedButton(
+                                      onPressed: _nextImage,
+                                      style: ElevatedButton.styleFrom(
+                                          shape: CircleBorder(),
+                                          backgroundColor: Colors.white
+                                      ),
+                                      child: Icon(Icons.arrow_forward,color:Colors.black),
+                                    ),
+                                    //削除
+                                    ElevatedButton(
+                                      onPressed: (){
+                                        if(_images!.isNotEmpty){
+                                          _images?.removeAt(_currentIndex);
+                                          setState(() {});}
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        shape: CircleBorder(),),
+                                      child: Icon(Icons.delete,color:Colors.black),
+                                    ),
+                                    //追加
+                                    ElevatedButton(
+                                      onPressed: _pickMultiImage,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        shape: CircleBorder(),),
+                                      child: Icon(Icons.add_a_photo,color:Colors.black,),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 100,vertical: 10),
+                                child: Column(
+                                  children: [
+                                    SizedBox(width: 20),
+
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start, //  これを追加
                                       children: [
-                                        Icon(Icons.edit_note),
-                                        SizedBox(width: 8),
-                                        Expanded(
-                                            child: TextFormField(
-                                              minLines: 4,// 任意の行数に設定可能
-                                              maxLines: 6,
-                                              controller: _captionController,
-                                              decoration: InputDecoration(
-                                                hintText: 'Add a caption',
-                                                border: OutlineInputBorder(),
+                                        ///キャプション（初期状態で３行ぐらいにしたい）
+                                        Row(
+                                          children: [
+                                            Icon(Icons.edit_note,color: Colors.white,),
+                                            SizedBox(width: 8),
+                                            Expanded(
+                                              child: TextFormField(
+                                                minLines: 4,// 任意の行数に設定可能
+                                                maxLines: 6,
+                                                controller: _captionController,
+                                                decoration: InputDecoration(
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  border: OutlineInputBorder(
+                                                      borderSide: BorderSide(color: Colors.grey)),
+                                                  hintText: 'Add a caption',
+                                                ),
                                               ),
                                             ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 10),
+                                        ///タグ
+                                        Container(
+                                          padding: EdgeInsets.only(left: 30),
+                                          child: Wrap(
+                                            spacing: 3.0,
+                                            runSpacing: 2.0,
+                                            children: _tags.toList().map((tag) =>
+                                                Chip(label: Text('#$tag',)) )
+                                                .toList(),
+                                          ),
+                                        ),
+                                        SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.tag,color: Colors.white,),
+                                            SizedBox(width: 8),
+                                            Expanded(
+                                              child: TextField(
+                                                //cursorColor: Colors.white,
+                                                decoration: InputDecoration(
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  border: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Colors.grey)),
+                                                  hintText: 'Tag',
+                                                ),
+                                                controller: _tagsController,
+                                              ),
+                                            ),
+                                            SizedBox(width: 5),
+                                            ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.white
+                                                ),
+                                                onPressed: ()async{
+                                                  if(_tagsController.text != ''){
+                                                    _addTag();
+                                                  }
+                                                  _tagsController.clear();
+                                                },
+                                                child: Text('タグを追加',style: TextStyle(color: Colors.black),)
+                                            )
+                                          ],
                                         ),
                                       ],
                                     ),
                                     SizedBox(height: 10),
-                                    ///タグ
-                                    Container(
-                                      padding: EdgeInsets.only(left: 30),
-                                      child: Wrap(
-                                        spacing: 3.0,
-                                        runSpacing: 2.0,
-                                        children: _tags.toList().map((tag) => Chip(label: Text('#$tag')) ).toList(),
+
+                                    Visibility(
+                                        visible: errorMessage != '',
+                                        child: Text(errorMessage,style: TextStyle(color: Colors.white),)
+                                    ),
+
+                                    SizedBox(height: 10),
+
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white
                                       ),
-                                    ),
-                                    SizedBox(height: 30),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.tag),
-                                        SizedBox(width: 8),
-                                        Expanded(
-                                            child: TextField(
-                                              decoration: InputDecoration(
-                                                hintText: 'Tag',
-                                                border: OutlineInputBorder(),
-                                              ),
-                                              controller: _tagsController,
-                                            ),
-                                        ),
-                                        SizedBox(width: 5),
-                                        ElevatedButton(
-                                            onPressed: ()async{
-                                              if(_tagsController.text != ''){
-                                                 _addTag();
-                                              }
-                                              _tagsController.clear();
-                                            },
-                                            child: Text('タグを追加')
-                                        )
-                                      ],
-                                    ),
+                                        child: Text('投稿',style: TextStyle(color: Colors.black),),
+                                        onPressed: ()async{
+                                          if(_images!.isEmpty /*|| _images == null*/){
+                                            setState(() {
+                                              errorMessage = '投稿したい画像を選択しましょう！';
+                                            });
+                                            debugPrint('空白です');
+                                          }else{
+                                            await setFirestore();
+                                            Navigator.push(context,
+                                              MaterialPageRoute(builder: (context) {
+                                                return NavigationRailPart(widgetUI:TimelinePage());
+                                              }),
+                                            );
+                                          }
+                                        }
+                                    )
                                   ],
                                 ),
-                                SizedBox(height: 30),
-
-                                Visibility(
-                                    visible: errorMessage != '',
-                                    child: Text(errorMessage)
-                                ),
-
-                                SizedBox(height: 10),
-
-                            ElevatedButton(
-                              child: Text('投稿'),
-                              onPressed: ()async{
-                                if(_images!.isEmpty /*|| _images == null*/){
-                                  setState(() {
-                                    errorMessage = '投稿したい画像を選択しましょう！';
-                                  });
-                                  debugPrint('空白です');
-                                }else{
-                                  await setFirestore();
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(builder: (context) {
-                                      return TimelinePage();
-                                    }),
-                                  );
-                                }
-                              }
-                            )
-                    ],
+                              ),
+                            ]
+                        ),
+                      )
                   ),
-                ),
-              ]
-          ),
-        )
-              ),
-        ),
-          bottomNavigationBar: BottomBar(),
-        );
-      },
-    );
+                )
+          )
+        ]);
+
   }
 }

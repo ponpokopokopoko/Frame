@@ -84,10 +84,12 @@ class _FollowButtonState extends State<FollowButton>{
           }
 
           return ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
                 child: Text(
                   _isFollowed
                       ? 'フォロー中' //　?trueのとき
                       : 'フォロー',// :falseのとき
+                  style: const TextStyle(color: Colors.black),
                 ),
                 onPressed: () async{
                   if (currentUid == '未登録') {
