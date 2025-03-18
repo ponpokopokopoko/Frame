@@ -13,7 +13,7 @@ import 'package:image/image.dart' as img;
 
 class MyAccountProfileEdit extends StatefulWidget {
 
-  final String iconImageUrl ;
+  final String iconImageUrl;
   final String backgroundImageUrl ;
   final String userId;
   final String userName;
