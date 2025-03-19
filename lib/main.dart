@@ -10,6 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:frame/main_page.dart';
 import 'firebase_options.dart';
 import 'package:frame/login_check.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,8 @@ Future<void> main() async{
   // FirebaseUserのログイン状態が確定するまで待つ
   //これを使うとかじゃなくて、状態の確定を待つために使ってる？
   final firebaseUser = await FirebaseAuth.instance.userChanges().first;
+
+  await dotenv.load(fileName: ".env"); // .envファイルを読み込む
 
   runApp(
       ProviderScope(//ProviderScopeでアプリをラップする

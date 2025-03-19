@@ -2,7 +2,8 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show Key, TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -15,6 +16,7 @@ import 'package:flutter/foundation.dart'
 /// );
 /// ```
 class DefaultFirebaseOptions {
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;
@@ -52,13 +54,16 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAKSmaH43YuhwujxBffw3nvQdAqZ5oFtdA',
-    appId: '1:468651832253:web:d9cadade677c8b68dcd8d4',
-    messagingSenderId: '468651832253',
+
+
+
+  static  FirebaseOptions web = FirebaseOptions(
+    apiKey: dotenv.env['API_KEY']!, // 環境変数を参照する,
+    appId: dotenv.env['API_ID']!,//.envに保存したやつを参照
+    messagingSenderId: dotenv.env['MESSAGING_SENDER_ID']!,
     projectId: 'frame-97d79',
     authDomain: 'frame-97d79.firebaseapp.com',
     storageBucket: 'frame-97d79.firebasestorage.app',
-    measurementId: 'G-1G5SCD7CW2',
+    measurementId: dotenv.env['MEASUREMENT_ID']!,
   );
 }
