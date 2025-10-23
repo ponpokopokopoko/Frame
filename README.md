@@ -1,6 +1,7 @@
 # Frame
 ユーザー同士が写真を共有できるSNSです。
 - アプリリンク：https://frame-97d79.web.app/
+- デモユーザー：メールアドレス:demo@example.com パスワード：demodemo123
 
 
 ## スクリーンショット
